@@ -19,7 +19,7 @@ export interface Game {
 const wait = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export async function scrapeGames(): Promise<Game[]> {
+export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
   console.log("🎮 Starting server-side game scraping...");
 
   let browser;
@@ -73,19 +73,6 @@ export async function scrapeGames(): Promise<Game[]> {
       "Sec-Fetch-User": "?1",
       "Upgrade-Insecure-Requests": "1",
     });
-
-    // Test if we can navigate to a simple page first
-    console.log("🧪 Testing navigation with simple page...");
-    try {
-      await page.goto("https://httpbin.org/get", {
-        waitUntil: "domcontentloaded",
-        timeout: 5000,
-      });
-      console.log("✅ Simple page navigation test successful!");
-    } catch (testError) {
-      console.error("❌ Even simple page navigation failed:", testError);
-      throw testError;
-    }
 
     console.log(
       "📱 Now navigating to amigo.love game slot page with mobile redirect handling..."
@@ -219,301 +206,78 @@ export async function scrapeGames(): Promise<Game[]> {
       await wait(3000);
     }
 
-    // Try to load more games if button exists (commented out for now)
-    // try {
-    //   const loadMoreBtn = await page.$(
-    //     'button:contains("更多"), [class*="load"], [class*="more"]'
-    //   );
-    //   if (loadMoreBtn) {
-    //     await loadMoreBtn.click();
-    //     await wait(3000);
-    //   }
-    // } catch (e) {
-    //   console.log("No load more button found");
-    // }
-
     // Get current page info for debugging
     const currentUrl = await page.url();
     const pageTitle = await page.title();
     console.log(`📄 Current page: ${currentUrl}`);
     console.log(`📝 Page title: ${pageTitle}`);
 
-    // Wait specifically for game items to load using exact selector from screenshot
-    console.log("⏳ Waiting for .game-item elements to load...");
-    try {
-      await page.waitForSelector(".game-item", {
-        timeout: 30000,
-        visible: true,
-      });
-      console.log("✅ Found .game-item elements!");
+    // Define all available providers
+    const allProviders = [
+      { id: "pg-soft", name: "PG Soft", selector: 'img[alt="PG Soft"]' },
+      { id: "pragmatic-play", name: "PragmaticPlay Slot", selector: 'img[alt="PragmaticPlay Slot"]' },
+      { id: "jili", name: "Jili", selector: 'img[alt="Jili"]' },
+      { id: "microgaming", name: "Microgaming Slot", selector: 'img[alt="Microgaming Slot"]' },
+    ];
 
-      // Also wait for images to load within game items
-      try {
-        await page.waitForSelector(".game-item .img-game", {
-          timeout: 10000,
-          visible: true,
-        });
-        console.log("✅ Found .img-game elements within .game-item!");
-      } catch (imgError) {
-        console.log("⚠️ .img-game elements not found, but proceeding...");
+    // Determine which provider(s) to scrape
+    let providersToScrape;
+    if (targetProvider) {
+      const selectedProvider = allProviders.find(p => p.id === targetProvider);
+      if (selectedProvider) {
+        providersToScrape = [selectedProvider];
+        console.log(`🎯 Targeting specific provider: ${selectedProvider.name}`);
+      } else {
+        console.log(`⚠️ Provider "${targetProvider}" not found, defaulting to PG Soft`);
+        providersToScrape = [allProviders[0]]; // Default to PG Soft
       }
-    } catch (gameItemError) {
-      console.log("⚠️ .game-item selector timeout, trying alternatives...");
+    } else {
+      console.log(`🎯 No specific provider requested, defaulting to PG Soft`);
+      providersToScrape = [allProviders[0]]; // Default to PG Soft
+    }
 
-      // Try alternative selectors based on screenshot structure
-      const alternativeSelectors = [
-        '[class*="game-item"]',
-        'div[class*="game"]',
-        '[data-v-545cc5a7][class*="game"]', // Vue.js specific from screenshot
-      ];
+    const allGames: Game[] = [];
 
-      let foundSelector = null;
-      for (const selector of alternativeSelectors) {
+    // Scrape games from selected provider(s)
+    for (const provider of providersToScrape) {
+      console.log(`🎮 Scraping games from ${provider.name}...`);
+
+      try {
+        // Click on provider image
+        console.log(`🖱️ Clicking on ${provider.name} provider...`);
+        await page.click(provider.selector);
+        await wait(3000); // Wait for games to load
+
+        // Wait for game items to load
+        console.log("⏳ Waiting for .game-item elements to load...");
         try {
-          await page.waitForSelector(selector, {
-            timeout: 5000,
+          await page.waitForSelector(".game-item", {
+            timeout: 15000,
             visible: true,
           });
-          foundSelector = selector;
-          console.log(`✅ Found alternative selector: ${selector}`);
-          break;
-        } catch (e) {
-          console.log(`⚠️ ${selector} not found`);
+          console.log("✅ Found .game-item elements!");
+        } catch (gameItemError) {
+          console.log(
+            `⚠️ No .game-item elements found for ${provider.name}, trying alternatives...`
+          );
         }
-      }
 
-      if (!foundSelector) {
-        console.log("⚠️ No game selectors found, proceeding with fallback...");
+        // Extract game data for this provider
+        console.log(`🔍 Extracting game data for ${provider.name}...`);
+        const providerGames = await extractGamesFromPage(page, provider.name);
+
+        console.log(
+          `📊 Found ${providerGames.length} games from ${provider.name}`
+        );
+        allGames.push(...providerGames);
+      } catch (error) {
+        console.log(`❌ Error scraping ${provider.name}:`, error);
+        continue;
       }
     }
 
-    // Final page info
-    const finalBodyText = await page.evaluate(
-      () => document.body?.innerText?.length || 0
-    );
-    console.log(`📊 Final page body text length: ${finalBodyText} characters`);
-
-    // Take screenshot for debugging (optional)
-    // await page.screenshot({ path: 'debug-screenshot.png', fullPage: true });
-    // console.log("📸 Debug screenshot saved as debug-screenshot.png");
-
-    // Extract game data
-    console.log("🔍 Starting to extract game data...");
-    try {
-      const gameData = await page.evaluate(() => {
-        const games: any[] = [];
-
-        // Debug: Check if we can find ANY elements
-        const allDivs = document.querySelectorAll("div");
-        const allImages = document.querySelectorAll("img");
-        const allLinks = document.querySelectorAll("a");
-
-        // Return debug info in the result
-        const debugInfo = {
-          totalDivs: allDivs.length,
-          totalImages: allImages.length,
-          totalLinks: allLinks.length,
-          bodyTextLength: document.body?.innerText?.length || 0,
-          pageTitle: document.title,
-        };
-
-        // Use specific selectors based on actual DOM structure from screenshot
-        const possibleSelectors = [
-          ".game-item", // Primary selector from screenshot
-          '[class*="game-item"]', // Backup with class contains
-          'div[class*="game"]', // Generic game divs
-        ];
-
-        let gameElements: Element[] = [];
-
-        try {
-          for (const selector of possibleSelectors) {
-            const elements = document.querySelectorAll(selector);
-            console.log("elements", elements);
-            if (elements.length > 0) {
-              gameElements = Array.from(elements);
-              console.log(
-                `Found ${elements.length} games with selector: ${selector}`
-              );
-              break;
-            }
-          }
-        } catch (e) {
-          console.log("No game elements found", e);
-        }
-
-        console.log("gameElements", gameElements);
-
-        // Fallback: find images using specific class from screenshot
-        if (gameElements.length === 0) {
-          console.log("No .game-item found, trying image-based fallback...");
-          const images = document.querySelectorAll(
-            '.img-game, img[src*="game"], img[src*="slot"], img[alt*="game"]'
-          );
-          gameElements = Array.from(images)
-            .map(
-              (img) =>
-                img.closest(".game-item") ||
-                img.closest("div") ||
-                img.parentElement
-            )
-            .filter(Boolean) as Element[];
-          console.log(
-            `Found ${gameElements.length} elements via image fallback`
-          );
-        }
-
-        gameElements.forEach((element, index) => {
-          try {
-            // Extract image using specific selector from screenshot
-            const img = element.querySelector(".img-game") as HTMLImageElement;
-            let imageUrl = "";
-            if (img) {
-              imageUrl =
-                img.src || img.dataset.src || img.dataset.original || "";
-              // Convert relative URLs to absolute
-              if (imageUrl.startsWith("/")) {
-                imageUrl = "https://m.amigo.love" + imageUrl;
-              }
-            }
-
-            // Extract game name using specific selector from screenshot
-            let gameName = "";
-            const gameNameEl = element.querySelector(".game-name");
-            if (gameNameEl?.textContent?.trim()) {
-              gameName = gameNameEl.textContent.trim();
-            }
-
-            // Fallback to alt text from image
-            if (!gameName && img) {
-              gameName = img.alt || img.title || "";
-            }
-            if (!gameName) {
-              gameName = `Game ${index + 1}`;
-            }
-
-            // Extract additional info
-            const provider =
-              element
-                .querySelector('[class*="provider"]')
-                ?.textContent?.trim() || "";
-            const category =
-              element
-                .querySelector('[class*="category"]')
-                ?.textContent?.trim() || "slot";
-
-            // Check for hot/new badges
-            const badges = element.querySelectorAll(
-              '[class*="hot"], [class*="new"], [class*="badge"]'
-            );
-            let isHot = false;
-            let isNew = false;
-
-            badges.forEach((badge) => {
-              const text = badge.textContent?.toLowerCase() || "";
-              if (text.includes("hot") || text.includes("火")) isHot = true;
-              if (text.includes("new") || text.includes("新")) isNew = true;
-            });
-
-            // Only include if we have at least a name or image
-            if (gameName || imageUrl) {
-              games.push({
-                id: `amigo-game-${index + 1}`,
-                name: gameName,
-                image: imageUrl,
-                category: category || "slot",
-                provider: provider || "Unknown",
-                isHot,
-                isNew,
-                // Extract players from .text-online with robust parsing
-                players: (() => {
-                  const playersEl = element.querySelector(
-                    '.text-online, [class*="text-online"]'
-                  );
-                  const raw = playersEl?.textContent?.trim() || "";
-
-                  // Support formats: "1,234", "1.2K", "2.3M"
-                  const cleaned = raw.replace(/,/g, "");
-                  const match = cleaned.match(/(\d+(?:\.\d+)?)([kKmM]?)/);
-                  if (match) {
-                    const base = parseFloat(match[1]);
-                    const suffix = match[2]?.toLowerCase();
-                    const multiplier =
-                      suffix === "k" ? 1000 : suffix === "m" ? 1000000 : 1;
-                    const value = Math.round(base * multiplier);
-                    if (!Number.isNaN(value) && value > 0) return value;
-                  }
-
-                  // Fallback if not found
-                  return Math.floor(Math.random() * 3000) + 200;
-                })(),
-                rtp: (() => {
-                  // Prefer .rtp-box .percent inside this .game-item, then fall back
-                  const percentEl = element.querySelector(
-                    '.rtp-box .percent, .percent, [class*="percent"]'
-                  );
-
-                  let value = percentEl?.textContent?.trim() || "";
-
-                  // Normalize if it lacks % or contains extra text
-                  if (value && !/%/.test(value)) {
-                    const match = value.match(/(\d{2,3}(?:\.\d+)?)/);
-                    if (match) value = `${match[1]}%`;
-                  }
-
-                  // Fallback: scan the card text for a percentage
-                  if (!value) {
-                    const text = element.textContent || "";
-                    const match = text.match(/(\d{2,3}(?:\.\d+)?)\s*%/);
-                    if (match) value = `${match[1]}%`;
-                  }
-
-                  return value || null;
-                })(),
-              });
-            }
-          } catch (error) {
-            console.log(`Error processing game element ${index}:`, error);
-          }
-        });
-
-        // Return both games and debug info
-        return {
-          games,
-          debug: debugInfo,
-        };
-      });
-
-      console.log("🔍 Page evaluation result:", gameData);
-
-      // Extract just the games from the result
-      const actualGames = gameData?.games || [];
-      console.log(`📊 Debug info from page:`, gameData?.debug);
-      console.log(`🎮 Extracted ${actualGames.length} games`);
-
-      // Check if page loaded properly - if not, immediately return fallback
-      if (gameData?.debug) {
-        const { totalDivs, totalImages, bodyTextLength, pageTitle } =
-          gameData.debug;
-
-        if (
-          totalDivs <= 5 &&
-          totalImages === 0 &&
-          bodyTextLength <= 20 &&
-          pageTitle === "Loading"
-        ) {
-          console.log(
-            "⚠️ Page appears to be blocked/not loaded properly - returning fallback immediately"
-          );
-          return generateFallbackGames();
-        }
-      }
-
-      return actualGames;
-    } catch (e) {
-      console.log("No game elements found", e);
-      return generateFallbackGames();
-    }
+    console.log(`🎮 Total games scraped: ${allGames.length}`);
+    return allGames.length > 0 ? allGames : generateFallbackGames();
   } catch (error) {
     console.error("❌ Server-side scraping failed:", error);
 
@@ -540,6 +304,176 @@ export async function scrapeGames(): Promise<Game[]> {
         console.error("Error closing browser in finally:", closeError);
       }
     }
+  }
+}
+
+// Helper function to extract games from current page
+async function extractGamesFromPage(
+  page: any,
+  providerName: string
+): Promise<Game[]> {
+  try {
+    const gameData = await page.evaluate((provider: string) => {
+      const games: any[] = [];
+
+      // Use specific selectors based on actual DOM structure from screenshot
+      const possibleSelectors = [
+        ".game-item", // Primary selector from screenshot
+        '[class*="game-item"]', // Backup with class contains
+        'div[class*="game"]', // Generic game divs
+      ];
+
+      let gameElements: Element[] = [];
+
+      try {
+        for (const selector of possibleSelectors) {
+          const elements = document.querySelectorAll(selector);
+          if (elements.length > 0) {
+            gameElements = Array.from(elements);
+            console.log(
+              `Found ${elements.length} games with selector: ${selector}`
+            );
+            break;
+          }
+        }
+      } catch (e) {
+        console.log("No game elements found", e);
+      }
+
+      // Fallback: find images using specific class from screenshot
+      if (gameElements.length === 0) {
+        console.log("No .game-item found, trying image-based fallback...");
+        const images = document.querySelectorAll(
+          '.img-game, img[src*="game"], img[src*="slot"], img[alt*="game"]'
+        );
+        gameElements = Array.from(images)
+          .map(
+            (img) =>
+              img.closest(".game-item") ||
+              img.closest("div") ||
+              img.parentElement
+          )
+          .filter(Boolean) as Element[];
+        console.log(`Found ${gameElements.length} elements via image fallback`);
+      }
+
+      gameElements.forEach((element, index) => {
+        try {
+          // Extract image using specific selector from screenshot
+          const img = element.querySelector(".img-game") as HTMLImageElement;
+          let imageUrl = "";
+          if (img) {
+            imageUrl = img.src || img.dataset.src || img.dataset.original || "";
+            // Convert relative URLs to absolute
+            if (imageUrl.startsWith("/")) {
+              imageUrl = "https://m.amigo.love" + imageUrl;
+            }
+          }
+
+          // Extract game name using specific selector from screenshot
+          let gameName = "";
+          const gameNameEl = element.querySelector(".game-name");
+          if (gameNameEl?.textContent?.trim()) {
+            gameName = gameNameEl.textContent.trim();
+          }
+
+          // Fallback to alt text from image
+          if (!gameName && img) {
+            gameName = img.alt || img.title || "";
+          }
+          if (!gameName) {
+            gameName = `Game ${index + 1}`;
+          }
+
+          // Extract additional info
+          const category =
+            element.querySelector('[class*="category"]')?.textContent?.trim() ||
+            "slot";
+
+          // Check for hot/new badges
+          const badges = element.querySelectorAll(
+            '[class*="hot"], [class*="new"], [class*="badge"]'
+          );
+          let isHot = false;
+          let isNew = false;
+
+          badges.forEach((badge) => {
+            const text = badge.textContent?.toLowerCase() || "";
+            if (text.includes("hot") || text.includes("火")) isHot = true;
+            if (text.includes("new") || text.includes("新")) isNew = true;
+          });
+
+          // Only include if we have at least a name or image
+          if (gameName || imageUrl) {
+            games.push({
+              id: `${provider.toLowerCase().replace(/\s+/g, "-")}-game-${
+                index + 1
+              }`,
+              name: gameName,
+              image: imageUrl,
+              category: category || "slot",
+              provider: provider,
+              isHot,
+              isNew,
+              // Extract players from .text-online with robust parsing
+              players: (() => {
+                const playersEl = element.querySelector(
+                  '.text-online, [class*="text-online"]'
+                );
+                const raw = playersEl?.textContent?.trim() || "";
+
+                // Support formats: "1,234", "1.2K", "2.3M"
+                const cleaned = raw.replace(/,/g, "");
+                const match = cleaned.match(/(\d+(?:\.\d+)?)([kKmM]?)/);
+                if (match) {
+                  const base = parseFloat(match[1]);
+                  const suffix = match[2]?.toLowerCase();
+                  const multiplier =
+                    suffix === "k" ? 1000 : suffix === "m" ? 1000000 : 1;
+                  const value = Math.round(base * multiplier);
+                  if (!Number.isNaN(value) && value > 0) return value;
+                }
+
+                // Fallback if not found
+                return Math.floor(Math.random() * 3000) + 200;
+              })(),
+              rtp: (() => {
+                // Prefer .rtp-box .percent inside this .game-item, then fall back
+                const percentEl = element.querySelector(
+                  '.rtp-box .percent, .percent, [class*="percent"]'
+                );
+
+                let value = percentEl?.textContent?.trim() || "";
+
+                // Normalize if it lacks % or contains extra text
+                if (value && !/%/.test(value)) {
+                  const match = value.match(/(\d{2,3}(?:\.\d+)?)/);
+                  if (match) value = `${match[1]}%`;
+                }
+
+                // Fallback: scan the card text for a percentage
+                if (!value) {
+                  const text = element.textContent || "";
+                  const match = text.match(/(\d{2,3}(?:\.\d+)?)\s*%/);
+                  if (match) value = `${match[1]}%`;
+                }
+
+                return value || null;
+              })(),
+            });
+          }
+        } catch (error) {
+          console.log(`Error processing game element ${index}:`, error);
+        }
+      });
+
+      return games;
+    }, providerName);
+
+    return gameData || [];
+  } catch (error) {
+    console.log(`Error extracting games for ${providerName}:`, error);
+    return [];
   }
 }
 

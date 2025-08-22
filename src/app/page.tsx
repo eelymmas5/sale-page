@@ -1,6 +1,9 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import PopularGames from "@/components/sections/PopularGames";
+import ProviderCarousel from "@/components/ProviderCarousel";
 import { Game } from "@/lib/scrapeGames";
-import { getBanners } from "@/lib/wordpress";
 
 interface ScrapedGameResponse {
   success: boolean;
@@ -12,126 +15,153 @@ interface ScrapedGameResponse {
   fallbackData?: Game[];
 }
 
-async function getGames(): Promise<Game[]> {
-  console.log("🎮 Starting server-side API call to scrape games...");
+const DEFAULT_PROVIDER = "pg-soft";
 
-  try {
-    // Get the base URL - handle both development and production
-    const baseUrl = "http://localhost:3000";
+export default function HomePage() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState(DEFAULT_PROVIDER);
+  const [isLoading, setIsLoading] = useState(true);
+  const [banners, setBanners] = useState<any>(null);
 
-    console.log(`📡 Making API request to: ${baseUrl}/api/scrape-games`);
+  // Fetch games from API for a specific provider
+  const fetchGames = async (providerId: string) => {
+    setIsLoading(true);
+    console.log(`🎮 Fetching games for provider: ${providerId}`);
 
-    const response = await fetch(`${baseUrl}/api/scrape-games`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // Always get fresh data for SSR
-      cache: "no-store",
-    });
+    try {
+      const response = await fetch(`/api/scrape-games?provider=${providerId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
+      if (!response.ok) {
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data: ScrapedGameResponse = await response.json();
+      console.log(
+        `📊 API Response - Success: ${data.success}, Total games: ${data.totalGames}`
       );
+
+      if (data.success && data.games?.length > 0) {
+        console.log(`✅ Successfully loaded ${data.games.length} games from API`);
+        setGames(data.games);
+      } else if (data.fallbackData && data.fallbackData.length > 0) {
+        console.log(`⚠️ Using fallback data from API: ${data.error}`);
+        setGames(data.fallbackData);
+      } else {
+        throw new Error("No game data received from API");
+      }
+    } catch (error) {
+      console.error("❌ Error calling scraping API:", error);
+
+      // Use hardcoded fallback games
+      console.log("🔄 Using hardcoded fallback games");
+      setGames([
+        {
+          id: "hardcoded-1",
+          name: "Gates of Olympus",
+          image: "/api/placeholder/300/200",
+          category: "slot",
+          provider: "Pragmatic Play",
+          players: Math.floor(Math.random() * 2000) + 800,
+          rtp: "96.50%",
+          isHot: true,
+          isNew: false,
+        },
+        {
+          id: "hardcoded-2",
+          name: "Sweet Bonanza",
+          image: "/api/placeholder/300/200",
+          category: "slot",
+          provider: "Pragmatic Play",
+          players: Math.floor(Math.random() * 1500) + 600,
+          rtp: "96.48%",
+          isHot: false,
+          isNew: false,
+        },
+        {
+          id: "hardcoded-3",
+          name: "Mahjong Ways 2",
+          image: "/api/placeholder/300/200",
+          category: "mahjong",
+          provider: "PG Soft",
+          players: Math.floor(Math.random() * 1200) + 400,
+          rtp: "96.42%",
+          isHot: false,
+          isNew: true,
+        },
+        {
+          id: "hardcoded-4",
+          name: "Fortune Tiger",
+          image: "/api/placeholder/300/200",
+          category: "slot",
+          provider: "PG Soft",
+          players: Math.floor(Math.random() * 1800) + 700,
+          rtp: "96.81%",
+          isHot: true,
+          isNew: false,
+        },
+        {
+          id: "hardcoded-5",
+          name: "Crazy Time",
+          image: "/api/placeholder/300/200",
+          category: "live",
+          provider: "Evolution",
+          players: Math.floor(Math.random() * 3000) + 1500,
+          rtp: "96.08%",
+          isHot: true,
+          isNew: false,
+        },
+        {
+          id: "hardcoded-6",
+          name: "Lightning Roulette",
+          image: "/api/placeholder/300/200",
+          category: "live",
+          provider: "Evolution",
+          players: Math.floor(Math.random() * 2500) + 1000,
+          rtp: "97.30%",
+          isHot: true,
+          isNew: false,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
     }
-
-    const data: ScrapedGameResponse = await response.json();
-    console.log(
-      `📊 API Response - Success: ${data.success}, Total games: ${data.totalGames}`
-    );
-
-    if (data.success && data.games?.length > 0) {
-      console.log(`✅ Successfully loaded ${data.games.length} games from API`);
-      return data.games;
-    } else if (data.fallbackData && data.fallbackData.length > 0) {
-      console.log(`⚠️ Using fallback data from API: ${data.error}`);
-      return data.fallbackData;
-    } else {
-      throw new Error("No game data received from API");
-    }
-  } catch (error) {
-    console.error("❌ Error calling scraping API during SSR:", error);
-
-    // Return hardcoded fallback if API call fails completely
-    console.log("🔄 Using hardcoded fallback games");
-    return [
-      {
-        id: "hardcoded-1",
-        name: "Gates of Olympus",
-        image: "/api/placeholder/300/200",
-        category: "slot",
-        provider: "Pragmatic Play",
-        players: Math.floor(Math.random() * 2000) + 800,
-        rtp: "96.50%",
-        isHot: true,
-        isNew: false,
-      },
-      {
-        id: "hardcoded-2",
-        name: "Sweet Bonanza",
-        image: "/api/placeholder/300/200",
-        category: "slot",
-        provider: "Pragmatic Play",
-        players: Math.floor(Math.random() * 1500) + 600,
-        rtp: "96.48%",
-        isHot: false,
-        isNew: false,
-      },
-      {
-        id: "hardcoded-3",
-        name: "Mahjong Ways 2",
-        image: "/api/placeholder/300/200",
-        category: "mahjong",
-        provider: "PG Soft",
-        players: Math.floor(Math.random() * 1200) + 400,
-        rtp: "96.42%",
-        isHot: false,
-        isNew: true,
-      },
-      {
-        id: "hardcoded-4",
-        name: "Fortune Tiger",
-        image: "/api/placeholder/300/200",
-        category: "slot",
-        provider: "PG Soft",
-        players: Math.floor(Math.random() * 1800) + 700,
-        rtp: "96.81%",
-        isHot: true,
-        isNew: false,
-      },
-      {
-        id: "hardcoded-5",
-        name: "Crazy Time",
-        image: "/api/placeholder/300/200",
-        category: "live",
-        provider: "Evolution",
-        players: Math.floor(Math.random() * 3000) + 1500,
-        rtp: "96.08%",
-        isHot: true,
-        isNew: false,
-      },
-      {
-        id: "hardcoded-6",
-        name: "Lightning Roulette",
-        image: "/api/placeholder/300/200",
-        category: "live",
-        provider: "Evolution",
-        players: Math.floor(Math.random() * 2500) + 1000,
-        rtp: "97.30%",
-        isHot: true,
-        isNew: false,
-      },
-    ];
-  }
-}
-
-export default async function HomePage() {
-  // Server-side fetch games via API route
-  const games = await getGames();
+  };
 
   // Fetch banners from WordPress
-  const banners = await getBanners();
+  const fetchBanners = async () => {
+    try {
+      // Note: You'll need to implement getBanners as a client-side fetch or move it to an API route
+      // For now, using a placeholder
+      setBanners({
+        sourceUrl: null // Will use default background
+      });
+    } catch (error) {
+      console.error("Error fetching banners:", error);
+      setBanners({ sourceUrl: null });
+    }
+  };
+
+  // Handle provider change
+  const handleProviderChange = (providerId: string) => {
+    if (providerId !== selectedProvider && !isLoading) {
+      setSelectedProvider(providerId);
+      fetchGames(providerId);
+    }
+  };
+
+  // Load initial data
+  useEffect(() => {
+    fetchBanners();
+    fetchGames(DEFAULT_PROVIDER);
+  }, []);
 
   return (
     <div
@@ -167,6 +197,15 @@ export default async function HomePage() {
             สมัครสมาชิก
           </button>
         </div>
+      </div>
+
+      {/* Provider Carousel Section */}
+      <div className="px-4 py-6">
+        <ProviderCarousel 
+          selectedProvider={selectedProvider}
+          onProviderChange={handleProviderChange}
+          isLoading={isLoading}
+        />
       </div>
 
       <main className="flex-1 flex gap-4 p-4 sm:p-6 sm:ml-20 lg:ml-24">

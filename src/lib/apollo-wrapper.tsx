@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { ApolloLink, HttpLink } from "@apollo/client";
 import {
@@ -6,11 +6,13 @@ import {
   ApolloClient,
   InMemoryCache,
   SSRMultipartLink,
-} from "@apollo/experimental-nextjs-app-support";
+} from "@apollo/client-integration-nextjs";
 
 function makeClient() {
   const httpLink = new HttpLink({
-    uri: process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:8080/graphql',
+    uri:
+      process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
+      "http://localhost:8080/graphql",
     fetchOptions: { cache: "no-store" },
   });
 

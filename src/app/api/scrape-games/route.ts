@@ -14,6 +14,16 @@ interface ScrapedGameResponse {
 export async function GET(request: NextRequest) {
   console.log('🎮 Starting game scraping API...');
   
+  // Get provider from query parameters
+  const { searchParams } = new URL(request.url);
+  const provider = searchParams.get('provider');
+  
+  if (provider) {
+    console.log(`🎯 API requested specific provider: ${provider}`);
+  } else {
+    console.log('🎯 API requested default provider (PG Soft)');
+  }
+  
   try {
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -21,7 +31,7 @@ export async function GET(request: NextRequest) {
     });
     
     const games = await Promise.race([
-      scrapeGames(),
+      scrapeGames(provider || undefined),
       timeoutPromise
     ]);
     
