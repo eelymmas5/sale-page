@@ -21,6 +21,8 @@ const wait = (ms: number) =>
 
 export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
   console.log("🎮 Starting server-side game scraping...");
+  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔧 Platform: ${process.platform}`);
 
   let browser;
   try {
@@ -28,7 +30,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
       "🚀 Launching Puppeteer-Extra browser with mobile stealth plugin..."
     );
     browser = await puppeteer.launch({
-      headless: true, // Change back to headless for production
+      headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -37,8 +39,13 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
         "--disable-features=VizDisplayCompositor",
         "--no-first-run",
         "--disable-extensions",
+        "--disable-gpu",
+        "--disable-background-timer-throttling",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-renderer-backgrounding",
         "--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
       ],
+      timeout: 30000, // 30 second timeout
     });
 
     console.log("📄 Creating new page...");
@@ -289,7 +296,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
     }
 
     console.log(`🎮 Total games scraped: ${allGames.length}`);
-    return allGames.length > 0 ? allGames : generateFallbackGames();
+    return allGames;
   } catch (error) {
     console.error("❌ Server-side scraping failed:", error);
 
@@ -303,9 +310,9 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
       }
     }
 
-    // Return fallback data
-    console.log("🔄 Returning fallback games due to scraping failure");
-    return generateFallbackGames();
+    // Return empty array on scraping failure
+    console.log("🔄 Returning empty array due to scraping failure");
+    return [];
   } finally {
     // Make sure browser is always closed
     if (browser) {
@@ -500,123 +507,4 @@ async function extractGamesFromPage(
     console.log(`Error extracting games for ${providerName}:`, error);
     return [];
   }
-}
-
-// Enhanced fallback games with more variety and realistic data (sorted by RTP, top 10)
-function generateFallbackGames(): Game[] {
-  const fallbackGames = [
-    {
-      id: "fallback-1",
-      name: "Baccarat",
-      image: "/api/placeholder/300/200",
-      category: "live",
-      provider: "Evolution",
-      players: Math.floor(Math.random() * 2200) + 800,
-      rtp: "98.94%",
-      isHot: false,
-      isNew: false,
-    },
-    {
-      id: "fallback-2",
-      name: "Lightning Roulette",
-      image: "/api/placeholder/300/200",
-      category: "live",
-      provider: "Evolution",
-      players: Math.floor(Math.random() * 2500) + 1000,
-      rtp: "97.30%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-3",
-      name: "Fortune Tiger",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "PG Soft",
-      players: Math.floor(Math.random() * 1800) + 700,
-      rtp: "96.81%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-4",
-      name: "Fortune Ox",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "PG Soft",
-      players: Math.floor(Math.random() * 1600) + 500,
-      rtp: "96.75%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-5",
-      name: "Gates of Olympus",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 2000) + 800,
-      rtp: "96.50%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-6",
-      name: "Starlight Princess",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 1400) + 600,
-      rtp: "96.50%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-7",
-      name: "Spaceman",
-      image: "/api/placeholder/300/200",
-      category: "crash",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 1100) + 400,
-      rtp: "96.50%",
-      isHot: false,
-      isNew: true,
-    },
-    {
-      id: "fallback-8",
-      name: "Sweet Bonanza",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 1500) + 600,
-      rtp: "96.48%",
-      isHot: false,
-      isNew: false,
-    },
-    {
-      id: "fallback-9",
-      name: "Mahjong Ways 2",
-      image: "/api/placeholder/300/200",
-      category: "mahjong",
-      provider: "PG Soft",
-      players: Math.floor(Math.random() * 1200) + 400,
-      rtp: "96.42%",
-      isHot: false,
-      isNew: true,
-    },
-    {
-      id: "fallback-10",
-      name: "Dragon Tiger",
-      image: "/api/placeholder/300/200",
-      category: "card",
-      provider: "Evolution",
-      players: Math.floor(Math.random() * 800) + 200,
-      rtp: "96.27%",
-      isHot: false,
-      isNew: true,
-    },
-  ];
-
-  console.log("🎯 Generated fallback games sorted by RTP (top 10)");
-  return fallbackGames;
 }

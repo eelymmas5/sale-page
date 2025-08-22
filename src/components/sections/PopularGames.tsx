@@ -114,26 +114,6 @@ export default function PopularGames({ provider, games }: PopularGamesProps) {
                   </span>
                 )}
               </div>
-
-              {/* Bottom Stats */}
-              {/* <div className="flex items-center justify-between text-xs sm:text-sm">
-                <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full" />
-                  <span className="truncate">
-                    {formatPlayers(game.players)} playing
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-0.5 sm:gap-1">
-                  <span className="text-yellow-400 text-xs sm:text-sm">★</span>
-                  <span className="text-gray-300 text-xs sm:text-sm">4.8</span>
-                </div>
-              </div> */}
-
-              {/* Mobile Play Button */}
-              {/* <button className="lg:hidden w-full mt-2 sm:mt-3 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold rounded-lg text-sm transition-all duration-300">
-                Play Now
-              </button> */}
             </div>
 
             {/* Glow Effect */}
