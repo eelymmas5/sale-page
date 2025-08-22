@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
+    remotePatterns: [
       'localhost', 
       'wordpress',
       'wp.mun789.com',    // WordPress site images

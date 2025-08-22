@@ -20,9 +20,12 @@ const wait = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
+  // Always log in production for monitoring
   console.log("🎮 Starting server-side game scraping...");
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔧 Platform: ${process.platform}`);
+  console.log(`🎯 Target Provider: ${targetProvider || 'pg-soft'}`);
+  console.log(`📅 Timestamp: ${new Date().toISOString()}`);
 
   let browser;
   try {
@@ -114,7 +117,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
       for (const url of mobileUrls) {
         console.log(`🔄 Trying mobile URL: ${url}`);
         try {
-          const response = await page.goto(url, {
+          await page.goto(url, {
             waitUntil: "domcontentloaded",
             timeout: 15000,
           });
@@ -263,18 +266,18 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
 
       try {
         // Click on provider image
-        console.log(`🖱️ Clicking on ${provider.name} provider...`);
+        console.log(`🖱️ Clicking on ${provider.name} provider at ${new Date().toISOString()}`);
         await page.click(provider.selector);
         await wait(3000); // Wait for games to load
 
         // Wait for game items to load
-        console.log("⏳ Waiting for .game-item elements to load...");
+        console.log(`⏳ Waiting for .game-item elements to load for ${provider.name}...`);
         try {
           await page.waitForSelector(".game-item", {
             timeout: 15000,
             visible: true,
           });
-          console.log("✅ Found .game-item elements!");
+          console.log(`✅ Found .game-item elements for ${provider.name}!`);
         } catch (gameItemError) {
           console.log(
             `⚠️ No .game-item elements found for ${provider.name}, trying alternatives...`
@@ -282,23 +285,26 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
         }
 
         // Extract game data for this provider
-        console.log(`🔍 Extracting game data for ${provider.name}...`);
+        console.log(`🔍 Extracting game data for ${provider.name} at ${new Date().toISOString()}...`);
         const providerGames = await extractGamesFromPage(page, provider.name);
 
         console.log(
-          `📊 Found ${providerGames.length} games from ${provider.name}`
+          `📊 Found ${providerGames.length} games from ${provider.name} (RTP sorted, top 10)`
         );
         allGames.push(...providerGames);
       } catch (error) {
-        console.log(`❌ Error scraping ${provider.name}:`, error);
+        console.error(`❌ Error scraping ${provider.name}:`, error);
+        console.error(`❌ Provider error timestamp: ${new Date().toISOString()}`);
         continue;
       }
     }
 
     console.log(`🎮 Total games scraped: ${allGames.length}`);
+    console.log(`✅ Scraping completed successfully at ${new Date().toISOString()}`);
     return allGames;
   } catch (error) {
     console.error("❌ Server-side scraping failed:", error);
+    console.error(`❌ Error timestamp: ${new Date().toISOString()}`);
 
     // Ensure browser is closed even on error
     if (browser) {
@@ -312,6 +318,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
 
     // Return empty array on scraping failure
     console.log("🔄 Returning empty array due to scraping failure");
+    console.log(`🔄 Failure timestamp: ${new Date().toISOString()}`);
     return [];
   } finally {
     // Make sure browser is always closed
@@ -500,11 +507,12 @@ async function extractGamesFromPage(
       .slice(0, 10); // Limit to 10 games
 
     console.log(
-      `🎯 Sorted and limited to top ${sortedGames.length} games by RTP for ${providerName}`
+      `🎯 Sorted and limited to top ${sortedGames.length} games by RTP for ${providerName} at ${new Date().toISOString()}`
     );
     return sortedGames;
   } catch (error) {
-    console.log(`Error extracting games for ${providerName}:`, error);
+    console.error(`❌ Error extracting games for ${providerName}:`, error);
+    console.error(`❌ Extraction error timestamp: ${new Date().toISOString()}`);
     return [];
   }
 }
