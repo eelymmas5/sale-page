@@ -32,7 +32,8 @@ interface HomePageProps {
   searchParams: { provider?: string };
 }
 
-export default async function HomePage({ searchParams }: HomePageProps) {
+export default async function HomePage(params: Promise<HomePageProps>) {
+  const { searchParams } = await params;
   // Get provider from URL search params, default to PG Soft
   const selectedProvider = searchParams.provider || DEFAULT_PROVIDER;
 
