@@ -215,20 +215,32 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
     // Define all available providers
     const allProviders = [
       { id: "pg-soft", name: "PG Soft", selector: 'img[alt="PG Soft"]' },
-      { id: "pragmatic-play", name: "PragmaticPlay Slot", selector: 'img[alt="PragmaticPlay Slot"]' },
+      {
+        id: "pragmatic-play",
+        name: "PragmaticPlay Slot",
+        selector: 'img[alt="PragmaticPlay Slot"]',
+      },
       { id: "jili", name: "Jili", selector: 'img[alt="Jili"]' },
-      { id: "microgaming", name: "Microgaming Slot", selector: 'img[alt="Microgaming Slot"]' },
+      {
+        id: "microgaming",
+        name: "Microgaming Slot",
+        selector: 'img[alt="Microgaming Slot"]',
+      },
     ];
 
     // Determine which provider(s) to scrape
     let providersToScrape;
     if (targetProvider) {
-      const selectedProvider = allProviders.find(p => p.id === targetProvider);
+      const selectedProvider = allProviders.find(
+        (p) => p.id === targetProvider
+      );
       if (selectedProvider) {
         providersToScrape = [selectedProvider];
         console.log(`🎯 Targeting specific provider: ${selectedProvider.name}`);
       } else {
-        console.log(`⚠️ Provider "${targetProvider}" not found, defaulting to PG Soft`);
+        console.log(
+          `⚠️ Provider "${targetProvider}" not found, defaulting to PG Soft`
+        );
         providersToScrape = [allProviders[0]]; // Default to PG Soft
       }
     } else {
@@ -471,14 +483,18 @@ async function extractGamesFromPage(
     }, providerName);
 
     // Sort games by RTP (highest first) and limit to 10 games
-    const sortedGames = (gameData || []).sort((a, b) => {
-      // Extract numeric RTP values for comparison
-      const rtpA = parseFloat(a.rtp?.replace('%', '') || '0');
-      const rtpB = parseFloat(b.rtp?.replace('%', '') || '0');
-      return rtpB - rtpA; // Sort descending (highest first)
-    }).slice(0, 10); // Limit to 10 games
+    const sortedGames = (gameData || [])
+      .sort((a: Game, b: Game) => {
+        // Extract numeric RTP values for comparison
+        const rtpA = parseFloat(a.rtp?.replace("%", "") || "0");
+        const rtpB = parseFloat(b.rtp?.replace("%", "") || "0");
+        return rtpB - rtpA; // Sort descending (highest first)
+      })
+      .slice(0, 10); // Limit to 10 games
 
-    console.log(`🎯 Sorted and limited to top ${sortedGames.length} games by RTP for ${providerName}`);
+    console.log(
+      `🎯 Sorted and limited to top ${sortedGames.length} games by RTP for ${providerName}`
+    );
     return sortedGames;
   } catch (error) {
     console.log(`Error extracting games for ${providerName}:`, error);
