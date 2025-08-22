@@ -1,32 +1,6 @@
-import Header from "@/components/sections/Header";
-import GameBanner from "@/components/sections/GameBanner";
-import GameSidebar from "@/components/sections/GameSidebar";
 import PopularGames from "@/components/sections/PopularGames";
 import { Game } from "@/lib/scrapeGames";
-import { testWordPressConnection, getBanners } from "@/lib/wordpress";
-
-const gameProviders = [
-  {
-    id: "pragmatic",
-    name: "Pragmatic Play",
-    icon: "🎯",
-    gameCount: 127,
-    isPopular: true,
-  },
-  {
-    id: "pg-soft",
-    name: "PG Soft",
-    icon: "🎮",
-    gameCount: 89,
-    isPopular: true,
-  },
-  { id: "evolution", name: "Evolution", icon: "🎪", gameCount: 45 },
-  { id: "netent", name: "NetEnt", icon: "🎰", gameCount: 156 },
-  { id: "microgaming", name: "Microgaming", icon: "🃏", gameCount: 234 },
-  { id: "playtech", name: "Playtech", icon: "🎲", gameCount: 178 },
-  { id: "red-tiger", name: "Red Tiger", icon: "🐅", gameCount: 98 },
-  { id: "quickspin", name: "Quickspin", icon: "⚡", gameCount: 67 },
-];
+import { getBanners } from "@/lib/wordpress";
 
 interface ScrapedGameResponse {
   success: boolean;
