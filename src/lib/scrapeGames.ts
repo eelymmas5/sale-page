@@ -470,73 +470,38 @@ async function extractGamesFromPage(
       return games;
     }, providerName);
 
-    return gameData || [];
+    // Sort games by RTP (highest first) and limit to 10 games
+    const sortedGames = (gameData || []).sort((a, b) => {
+      // Extract numeric RTP values for comparison
+      const rtpA = parseFloat(a.rtp?.replace('%', '') || '0');
+      const rtpB = parseFloat(b.rtp?.replace('%', '') || '0');
+      return rtpB - rtpA; // Sort descending (highest first)
+    }).slice(0, 10); // Limit to 10 games
+
+    console.log(`🎯 Sorted and limited to top ${sortedGames.length} games by RTP for ${providerName}`);
+    return sortedGames;
   } catch (error) {
     console.log(`Error extracting games for ${providerName}:`, error);
     return [];
   }
 }
 
-// Enhanced fallback games with more variety and realistic data
+// Enhanced fallback games with more variety and realistic data (sorted by RTP, top 10)
 function generateFallbackGames(): Game[] {
-  return [
+  const fallbackGames = [
     {
       id: "fallback-1",
-      name: "Gates of Olympus",
+      name: "Baccarat",
       image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 2000) + 800,
-      rtp: "96.50%",
-      isHot: true,
+      category: "live",
+      provider: "Evolution",
+      players: Math.floor(Math.random() * 2200) + 800,
+      rtp: "98.94%",
+      isHot: false,
       isNew: false,
     },
     {
       id: "fallback-2",
-      name: "Sweet Bonanza",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 1500) + 600,
-      rtp: "96.48%",
-      isHot: false,
-      isNew: false,
-    },
-    {
-      id: "fallback-3",
-      name: "Mahjong Ways 2",
-      image: "/api/placeholder/300/200",
-      category: "mahjong",
-      provider: "PG Soft",
-      players: Math.floor(Math.random() * 1200) + 400,
-      rtp: "96.42%",
-      isHot: false,
-      isNew: true,
-    },
-    {
-      id: "fallback-4",
-      name: "Fortune Tiger",
-      image: "/api/placeholder/300/200",
-      category: "slot",
-      provider: "PG Soft",
-      players: Math.floor(Math.random() * 1800) + 700,
-      rtp: "96.81%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-5",
-      name: "Crazy Time",
-      image: "/api/placeholder/300/200",
-      category: "live",
-      provider: "Evolution",
-      players: Math.floor(Math.random() * 3000) + 1500,
-      rtp: "96.08%",
-      isHot: true,
-      isNew: false,
-    },
-    {
-      id: "fallback-6",
       name: "Lightning Roulette",
       image: "/api/placeholder/300/200",
       category: "live",
@@ -547,29 +512,18 @@ function generateFallbackGames(): Game[] {
       isNew: false,
     },
     {
-      id: "fallback-7",
-      name: "Dragon Tiger",
+      id: "fallback-3",
+      name: "Fortune Tiger",
       image: "/api/placeholder/300/200",
-      category: "card",
-      provider: "Evolution",
-      players: Math.floor(Math.random() * 800) + 200,
-      rtp: "96.27%",
-      isHot: false,
-      isNew: true,
+      category: "slot",
+      provider: "PG Soft",
+      players: Math.floor(Math.random() * 1800) + 700,
+      rtp: "96.81%",
+      isHot: true,
+      isNew: false,
     },
     {
-      id: "fallback-8",
-      name: "Spaceman",
-      image: "/api/placeholder/300/200",
-      category: "crash",
-      provider: "Pragmatic Play",
-      players: Math.floor(Math.random() * 1100) + 400,
-      rtp: "96.50%",
-      isHot: false,
-      isNew: true,
-    },
-    {
-      id: "fallback-9",
+      id: "fallback-4",
       name: "Fortune Ox",
       image: "/api/placeholder/300/200",
       category: "slot",
@@ -580,7 +534,18 @@ function generateFallbackGames(): Game[] {
       isNew: false,
     },
     {
-      id: "fallback-10",
+      id: "fallback-5",
+      name: "Gates of Olympus",
+      image: "/api/placeholder/300/200",
+      category: "slot",
+      provider: "Pragmatic Play",
+      players: Math.floor(Math.random() * 2000) + 800,
+      rtp: "96.50%",
+      isHot: true,
+      isNew: false,
+    },
+    {
+      id: "fallback-6",
       name: "Starlight Princess",
       image: "/api/placeholder/300/200",
       category: "slot",
@@ -591,15 +556,51 @@ function generateFallbackGames(): Game[] {
       isNew: false,
     },
     {
-      id: "fallback-11",
-      name: "Baccarat",
+      id: "fallback-7",
+      name: "Spaceman",
       image: "/api/placeholder/300/200",
-      category: "live",
-      provider: "Evolution",
-      players: Math.floor(Math.random() * 2200) + 800,
-      rtp: "98.94%",
+      category: "crash",
+      provider: "Pragmatic Play",
+      players: Math.floor(Math.random() * 1100) + 400,
+      rtp: "96.50%",
+      isHot: false,
+      isNew: true,
+    },
+    {
+      id: "fallback-8",
+      name: "Sweet Bonanza",
+      image: "/api/placeholder/300/200",
+      category: "slot",
+      provider: "Pragmatic Play",
+      players: Math.floor(Math.random() * 1500) + 600,
+      rtp: "96.48%",
       isHot: false,
       isNew: false,
     },
+    {
+      id: "fallback-9",
+      name: "Mahjong Ways 2",
+      image: "/api/placeholder/300/200",
+      category: "mahjong",
+      provider: "PG Soft",
+      players: Math.floor(Math.random() * 1200) + 400,
+      rtp: "96.42%",
+      isHot: false,
+      isNew: true,
+    },
+    {
+      id: "fallback-10",
+      name: "Dragon Tiger",
+      image: "/api/placeholder/300/200",
+      category: "card",
+      provider: "Evolution",
+      players: Math.floor(Math.random() * 800) + 200,
+      rtp: "96.27%",
+      isHot: false,
+      isNew: true,
+    },
   ];
+
+  console.log("🎯 Generated fallback games sorted by RTP (top 10)");
+  return fallbackGames;
 }

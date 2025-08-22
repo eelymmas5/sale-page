@@ -13,9 +13,10 @@ interface Game {
 
 interface PopularGamesProps {
   games: Game[];
+  provider: string;
 }
 
-export default function PopularGames({ games }: PopularGamesProps) {
+export default function PopularGames({ provider, games }: PopularGamesProps) {
   const formatPlayers = (count: number): string => {
     if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}k`;
@@ -24,11 +25,11 @@ export default function PopularGames({ games }: PopularGamesProps) {
   };
 
   return (
-    <div>
+    <div className="w-full">
       {/* Header with Popular Game Icons */}
       <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black">
-          Popular Game
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+          {provider}
         </h1>
       </div>
 
