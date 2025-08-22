@@ -162,8 +162,6 @@ export default async function HomePage() {
   // Fetch banners from WordPress
   const banners = await getBanners();
 
-  console.log("banners", banners);
-
   return (
     <div
       className="min-h-screen"

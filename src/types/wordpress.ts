@@ -122,7 +122,7 @@ export interface BannerNode {
 }
 
 export interface BannersData {
-  banners: {
+  mediaItems: {
     nodes: BannerNode[];
   };
 }

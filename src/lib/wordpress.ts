@@ -100,8 +100,6 @@ export async function getBanners() {
       fetchPolicy: "no-cache",
     });
 
-    console.log("data", data);
-
     const banners = data?.mediaItems?.nodes[0] ?? [];
 
     return banners;
