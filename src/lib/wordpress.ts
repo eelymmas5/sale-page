@@ -1,7 +1,7 @@
 import { getClient } from "./apollo-client";
 import { GET_POSTS, GET_PAGES, GET_SITE_INFO } from "./graphql-queries";
 import { GET_BANNERS } from "./queries";
-import { BannersData } from "@/types";
+import { BannersData, MediaItem } from "@/types";
 
 // Test WordPress GraphQL connection
 export async function testWordPressConnection() {
@@ -100,11 +100,11 @@ export async function getBanners() {
       fetchPolicy: "no-cache",
     });
 
-    const banners = data?.mediaItems?.nodes[0] ?? [];
+    const banners = data?.mediaItems?.nodes[0];
 
     return banners;
   } catch (error) {
     console.error("❌ Error fetching banners:", error);
-    return [];
+    return null;
   }
 }

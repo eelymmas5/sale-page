@@ -156,9 +156,6 @@ export default async function HomePage() {
   // Server-side fetch games via API route
   const games = await getGames();
 
-  // Test WordPress connection
-  const wpTest = await testWordPressConnection();
-
   // Fetch banners from WordPress
   const banners = await getBanners();
 
@@ -172,7 +169,9 @@ export default async function HomePage() {
     >
       <div
         style={{
-          background: `url(${banners?.sourceUrl}) no-repeat center center`,
+          background: banners?.sourceUrl
+            ? `url(${banners.sourceUrl}) no-repeat center center`
+            : "none",
           backgroundSize: "cover",
           height: "540px",
         }}

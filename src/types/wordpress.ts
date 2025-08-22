@@ -107,22 +107,14 @@ export interface SEOQueryData {
   };
 }
 
-export interface BannerNode {
+export interface MediaItem {
   title: string;
-  featuredImage: {
-    node: {
-      sourceUrl: string;
-      altText: string;
-      mediaDetails: {
-        width: number;
-        height: number;
-      };
-    };
-  };
+  sourceUrl: string;
+  altText: string;
 }
 
 export interface BannersData {
   mediaItems: {
-    nodes: BannerNode[];
+    nodes: MediaItem[];
   };
 }
