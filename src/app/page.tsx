@@ -29,13 +29,13 @@ async function getGames(provider?: string): Promise<Game[]> {
 }
 
 interface HomePageProps {
-  searchParams: { provider?: string };
+  searchParams: Promise<{ provider?: string }>;
 }
 
-export default async function HomePage(params: Promise<HomePageProps>) {
-  const { searchParams } = await params;
+export default async function HomePage(params: HomePageProps) {
+  const { provider } = await params.searchParams;
   // Get provider from URL search params, default to PG Soft
-  const selectedProvider = searchParams.provider || DEFAULT_PROVIDER;
+  const selectedProvider = provider || DEFAULT_PROVIDER;
 
   // Server-side fetch games for selected provider
   const games = await getGames(selectedProvider);
