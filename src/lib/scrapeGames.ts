@@ -1,6 +1,5 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import chromium from "@sparticuz/chromium";
 
 // Add stealth plugin
 puppeteer.use(StealthPlugin());
@@ -28,18 +27,13 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
   console.log(`🎯 Target Provider: ${targetProvider || 'pg-soft'}`);
   console.log(`📅 Timestamp: ${new Date().toISOString()}`);
 
-  // Detect serverless environments
-  const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
-  const isServerless = isVercel || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME;
-  
   let browser;
   try {
-    console.log("🚀 Launching Puppeteer-Extra browser with mobile stealth plugin...");
-    
-    // Configure browser options based on environment
-    const launchOptions: any = {
+    console.log(
+      "🚀 Launching Puppeteer-Extra browser with mobile stealth plugin..."
+    );
+    browser = await puppeteer.launch({
       headless: true,
-      timeout: 30000, // 30 second timeout
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -54,17 +48,8 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
         "--disable-renderer-backgrounding",
         "--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
       ],
-    };
-
-    // Use Sparticuz chromium in serverless environments
-    if (isServerless) {
-      console.log("🚀 Serverless environment detected - using @sparticuz/chromium");
-      launchOptions.executablePath = await chromium.executablePath();
-      launchOptions.args = chromium.args;
-      launchOptions.ignoreHTTPSErrors = true;
-    }
-
-    browser = await puppeteer.launch(launchOptions);
+      timeout: 30000, // 30 second timeout
+    });
 
     console.log("📄 Creating new page...");
     const page = await browser.newPage();
@@ -232,7 +217,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
     }
 
     // Get current page info for debugging
-    const currentUrl = page.url();
+    const currentUrl = await page.url();
     const pageTitle = await page.title();
     console.log(`📄 Current page: ${currentUrl}`);
     console.log(`📝 Page title: ${pageTitle}`);
