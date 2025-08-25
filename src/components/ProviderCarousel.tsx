@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export interface Provider {
   id: string;
@@ -51,17 +52,46 @@ interface ProviderCarouselProps {
 export default function ProviderCarousel({
   selectedProvider,
 }: ProviderCarouselProps) {
+  const router = useRouter();
+
+  const handleProviderChange = (providerId: string) => {
+    // Store current scroll position in sessionStorage
+    const scrollPosition = window.scrollY;
+    sessionStorage.setItem(
+      "providerChangeScrollPosition",
+      scrollPosition.toString()
+    );
+
+    // Navigate to new provider with scroll disabled
+    router.push(`/?provider=${providerId}`, { scroll: false });
+  };
+
+  // Restore scroll position after provider change
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem(
+      "providerChangeScrollPosition"
+    );
+    if (savedScrollPosition) {
+      const position = parseInt(savedScrollPosition, 10);
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: position, behavior: "instant" });
+        sessionStorage.removeItem("providerChangeScrollPosition");
+      });
+    }
+  }, [selectedProvider]);
+
   return (
     <div className="w-full">
       {/* Provider Horizontal Scroll */}
       <div className="relative">
         <div className="flex gap-4 overflow-x-auto scrollbar-hide px-4 pb-2">
           {PROVIDERS.map((provider) => (
-            <Link
+            <button
               key={provider.id}
-              href={`/?provider=${provider.id}`}
+              onClick={() => handleProviderChange(provider.id)}
               className={`
-                relative p-4 rounded-xl border-2 transition-all duration-300 min-w-[120px] flex-shrink-0 block
+                relative p-4 rounded-xl border-2 transition-all duration-300 min-w-[120px] flex-shrink-0
                 ${
                   selectedProvider === provider.id
                     ? "border-[#ff00aa] bg-[#562440] shadow-lg shadow-[#ff00aa]/20"
@@ -92,7 +122,7 @@ export default function ProviderCarousel({
                   <div className="w-3 h-3 bg-[#ff00aa] rounded-full"></div>
                 </div>
               )}
-            </Link>
+            </button>
           ))}
         </div>
 
