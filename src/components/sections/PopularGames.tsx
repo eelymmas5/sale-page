@@ -1,26 +1,58 @@
 import Image from "next/image";
-import { Game, scrapeGames } from "@/lib/scrapeGames";
+
+export interface Game {
+  id: string;
+  name: string;
+  image: string;
+  players: number;
+  rtp: string;
+  isHot?: boolean;
+  isNew?: boolean;
+  category: string;
+  provider?: string;
+}
 
 async function getGames(provider?: string): Promise<Game[]> {
   const DEFAULT_PROVIDER = "pg-soft";
+  const selectedProvider = provider || DEFAULT_PROVIDER;
+  
   console.log(
-    `🎮 Starting server-side game scraping for provider: ${
-      provider || DEFAULT_PROVIDER
-    }...`
+    `🎮 Fetching games from API for provider: ${selectedProvider}...`
   );
 
   try {
-    const games = await scrapeGames(provider || DEFAULT_PROVIDER);
+    // Determine the base URL for API calls
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin 
+      : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    
+    // Call our API route instead of direct scraping
+    const response = await fetch(`${baseUrl}/api/scrape-games?provider=${selectedProvider}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', // Ensure we don't cache the API response at the fetch level since we handle caching in the API
+    });
 
-    if (games && games.length > 0) {
-      console.log(`✅ Successfully scraped ${games.length} games`);
-      return games;
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.success && data.games && data.games.length > 0) {
+      console.log(`✅ Successfully fetched ${data.games.length} games from API${data.fromCache ? ' (cached)' : ''}`);
+      return data.games;
+    } else if (data.games && data.games.length > 0) {
+      // Fallback data is still useful
+      console.log(`⚠️ Using fallback data: ${data.games.length} games`);
+      return data.games;
     } else {
-      throw new Error("No games found during scraping");
+      throw new Error(data.error || "No games found in API response");
     }
   } catch (error) {
-    console.error("❌ Error during server-side scraping:", error);
-
+    console.error("❌ Error fetching games from API:", error);
     return [];
   }
 }

@@ -62,7 +62,16 @@ export async function GET(request: NextRequest) {
       fromCache: true,
       timestamp: new Date().toISOString()
     };
-    return NextResponse.json(cachedResponse);
+    
+    // Add HTTP cache headers for cached responses too
+    const cacheHeaders = new Headers({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800',
+      'X-Cache-Status': 'HIT',
+      'X-Provider': provider,
+    });
+    
+    return NextResponse.json(cachedResponse, { headers: cacheHeaders });
   }
   
   console.log(`🔄 Cache miss or expired for ${provider}, fetching fresh data...`);
@@ -112,7 +121,16 @@ export async function GET(request: NextRequest) {
     });
     
     console.log(`💾 Cached fresh data for ${provider}`);
-    return NextResponse.json(response, { status: 200 });
+    
+    // Add HTTP cache headers for CDN/browser caching
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800', // 15min cache, 30min stale
+      'X-Cache-Status': response.fromCache ? 'HIT' : 'MISS',
+      'X-Provider': provider,
+    });
+    
+    return NextResponse.json(response, { status: 200, headers });
     
   } catch (error) {
     console.error('❌ Scraping failed:', error);
@@ -137,7 +155,16 @@ export async function GET(request: NextRequest) {
     });
     
     console.log(`💾 Cached fallback data for ${provider} due to error`);
-    return NextResponse.json(errorResponse, { status: 200 }); // Return 200 with fallback data
+    
+    // Add HTTP cache headers for error responses with fallback data
+    const errorHeaders = new Headers({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600', // Shorter cache for errors (5min)
+      'X-Cache-Status': 'ERROR',
+      'X-Provider': provider,
+    });
+    
+    return NextResponse.json(errorResponse, { status: 200, headers: errorHeaders }); // Return 200 with fallback data
   }
 }
 

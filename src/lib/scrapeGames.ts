@@ -38,55 +38,13 @@ export interface Game {
   provider?: string;
 }
 
-interface CacheEntry {
-  games: Game[];
-  timestamp: number;
-  provider: string;
-}
-
-// In-memory cache with 15-minute TTL
-const gamesCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
-
-function getCacheKey(provider: string): string {
-  return `scrape_${provider || 'pg-soft'}`;
-}
-
-function isValidCache(entry: CacheEntry): boolean {
-  const now = Date.now();
-  return (now - entry.timestamp) < CACHE_TTL;
-}
-
-function clearExpiredCache(): void {
-  const now = Date.now();
-  for (const [key, entry] of gamesCache.entries()) {
-    if ((now - entry.timestamp) >= CACHE_TTL) {
-      gamesCache.delete(key);
-      console.log(`🗑️ Cleared expired cache for ${key}`);
-    }
-  }
-}
+// Removed caching from scrapeGames function - now handled at API route level for better architecture
 
 const wait = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
   const provider = targetProvider || "pg-soft";
-  
-  // Clear expired cache entries
-  clearExpiredCache();
-  
-  // Check cache first
-  const cacheKey = getCacheKey(provider);
-  const cachedEntry = gamesCache.get(cacheKey);
-  
-  if (cachedEntry && isValidCache(cachedEntry)) {
-    const ageInSeconds = Math.round((Date.now() - cachedEntry.timestamp) / 1000);
-    console.log(`💾 Returning cached games for ${provider} (${ageInSeconds}s old, ${cachedEntry.games.length} games)`);
-    return cachedEntry.games;
-  }
-  
-  console.log(`🔄 Cache miss or expired for ${provider}, performing fresh scrape...`);
   
   // Always log in production for monitoring
   console.log("🎮 Starting server-side game scraping...");
@@ -383,15 +341,6 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
     console.log(
       `✅ Scraping completed successfully at ${new Date().toISOString()}`
     );
-    
-    // Cache the results
-    gamesCache.set(cacheKey, {
-      games: allGames,
-      timestamp: Date.now(),
-      provider
-    });
-    
-    console.log(`💾 Cached ${allGames.length} games for ${provider}`);
     return allGames;
   } catch (error) {
     console.error("❌ Server-side scraping failed:", error);
@@ -407,18 +356,10 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
       }
     }
 
-    // Cache empty result to prevent repeated failures
-    const emptyResult: Game[] = [];
-    gamesCache.set(cacheKey, {
-      games: emptyResult,
-      timestamp: Date.now(),
-      provider
-    });
-    
-    console.log(`💾 Cached empty result for ${provider} due to scraping failure`);
+    // Return empty array on scraping failure
     console.log("🔄 Returning empty array due to scraping failure");
     console.log(`🔄 Failure timestamp: ${new Date().toISOString()}`);
-    return emptyResult;
+    return [];
   } finally {
     // Make sure browser is always closed
     if (browser) {
