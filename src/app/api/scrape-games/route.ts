@@ -9,20 +9,63 @@ interface ScrapedGameResponse {
   games: Game[];
   error?: string;
   fallbackData?: Game[];
+  fromCache?: boolean;
+}
+
+interface CacheEntry {
+  data: ScrapedGameResponse;
+  timestamp: number;
+  provider: string;
+}
+
+// In-memory cache with 15-minute TTL
+const cache = new Map<string, CacheEntry>();
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+function getCacheKey(provider: string): string {
+  return `games_${provider || 'pg-soft'}`;
+}
+
+function isValidCache(entry: CacheEntry): boolean {
+  const now = Date.now();
+  return (now - entry.timestamp) < CACHE_TTL;
+}
+
+function clearExpiredCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of cache.entries()) {
+    if ((now - entry.timestamp) >= CACHE_TTL) {
+      cache.delete(key);
+    }
+  }
 }
 
 export async function GET(request: NextRequest) {
   console.log('🎮 Starting game scraping API...');
   
+  // Clear expired cache entries
+  clearExpiredCache();
+  
   // Get provider from query parameters
   const { searchParams } = new URL(request.url);
-  const provider = searchParams.get('provider');
+  const provider = searchParams.get('provider') || 'pg-soft';
+  const cacheKey = getCacheKey(provider);
   
-  if (provider) {
-    console.log(`🎯 API requested specific provider: ${provider}`);
-  } else {
-    console.log('🎯 API requested default provider (PG Soft)');
+  console.log(`🎯 API requested provider: ${provider}`);
+  
+  // Check cache first
+  const cachedEntry = cache.get(cacheKey);
+  if (cachedEntry && isValidCache(cachedEntry)) {
+    console.log(`💾 Returning cached data for ${provider} (${Math.round((Date.now() - cachedEntry.timestamp) / 1000)}s old)`);
+    const cachedResponse = {
+      ...cachedEntry.data,
+      fromCache: true,
+      timestamp: new Date().toISOString()
+    };
+    return NextResponse.json(cachedResponse);
   }
+  
+  console.log(`🔄 Cache miss or expired for ${provider}, fetching fresh data...`);
   
   try {
     // Add timeout to prevent hanging
@@ -31,22 +74,25 @@ export async function GET(request: NextRequest) {
     });
     
     const games = await Promise.race([
-      scrapeGames(provider || undefined),
+      scrapeGames(provider),
       timeoutPromise
     ]);
     
+    let response: ScrapedGameResponse;
+    
     if (games && games.length > 0) {
-      return NextResponse.json({
+      response = {
         success: true,
         timestamp: new Date().toISOString(),
         source: 'https://m.amigo.love/game-slot',
         totalGames: games.length,
         games,
-      } as ScrapedGameResponse);
+        fromCache: false
+      };
     } else {
       // Return fallback data if scraping returned empty
       const fallbackGames = generateFallbackGames();
-      return NextResponse.json({
+      response = {
         success: false,
         error: 'No games found during scraping',
         fallbackData: fallbackGames,
@@ -54,14 +100,25 @@ export async function GET(request: NextRequest) {
         source: 'fallback',
         totalGames: fallbackGames.length,
         games: fallbackGames,
-      } as ScrapedGameResponse, { status: 200 }); // Still return 200 since we have fallback data
+        fromCache: false
+      };
     }
+    
+    // Cache the response
+    cache.set(cacheKey, {
+      data: response,
+      timestamp: Date.now(),
+      provider
+    });
+    
+    console.log(`💾 Cached fresh data for ${provider}`);
+    return NextResponse.json(response, { status: 200 });
     
   } catch (error) {
     console.error('❌ Scraping failed:', error);
     
     const fallbackGames = generateFallbackGames();
-    return NextResponse.json({
+    const errorResponse: ScrapedGameResponse = {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
       fallbackData: fallbackGames,
@@ -69,7 +126,18 @@ export async function GET(request: NextRequest) {
       source: 'fallback',
       totalGames: fallbackGames.length,
       games: fallbackGames,
-    } as ScrapedGameResponse, { status: 200 }); // Return 200 with fallback data
+      fromCache: false
+    };
+    
+    // Cache fallback data as well to prevent repeated failures
+    cache.set(cacheKey, {
+      data: errorResponse,
+      timestamp: Date.now(),
+      provider
+    });
+    
+    console.log(`💾 Cached fallback data for ${provider} due to error`);
+    return NextResponse.json(errorResponse, { status: 200 }); // Return 200 with fallback data
   }
 }
 
