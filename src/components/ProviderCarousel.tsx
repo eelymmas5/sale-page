@@ -44,13 +44,13 @@ export const PROVIDERS: Provider[] = [
   },
 ];
 
-interface ProviderCarouselSSRProps {
+interface ProviderCarouselProps {
   selectedProvider: string;
 }
 
-export default function ProviderCarouselSSR({
+export default function ProviderCarousel({
   selectedProvider,
-}: ProviderCarouselSSRProps) {
+}: ProviderCarouselProps) {
   return (
     <div className="w-full">
       {/* Provider Horizontal Scroll */}

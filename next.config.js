@@ -1,16 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
-    remotePatterns: [
-      'localhost', 
-      'wordpress',
-      'wp.mun789.com',    // WordPress site images
-      'mun789.com',       // Main domain images  
-      'cdn.eaeaea.click', // Gaming images from amigo.love
-      'm.amigo.love',     // Mobile site images
-      'amigo.love',       // Main site images
-    ],
-    formats: ['image/webp', 'image/avif'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -36,7 +27,14 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
     ],
+    formats: ['image/webp', 'image/avif'],
   },
   env: {
     WORDPRESS_API_URL: process.env.WORDPRESS_API_URL || 'https://wp.mun789.com/graphql',
@@ -45,6 +43,8 @@ const nextConfig = {
     'puppeteer-extra', 
     'puppeteer-extra-plugin-stealth',
     'puppeteer-extra-plugin-recaptcha',
+    'puppeteer-extra-plugin-user-preferences',
+    'puppeteer-extra-plugin-user-data-dir',
   ],
 }
 

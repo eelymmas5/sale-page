@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "docker:build": "docker build --platform linux/amd64 -t object200/minion:sale-page-main .",
+    "docker:push": "docker push object200/minion:sale-page-main",
+    "docker:build-push": "npm run docker:build && npm run docker:push",
+    "docker:run": "docker run -p 3000:3000 object200/minion:sale-page-main"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +21,7 @@
     "@apollo/client": "^3.13.9",
     "@apollo/client-integration-nextjs": "^0.12.3",
     "@apollo/experimental-nextjs-app-support": "^0.12.3",
+    "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
@@ -27,6 +32,8 @@
     "postcss": "^8.5.6",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "puppeteer-extra-plugin-user-data-dir": "^2.4.1",
+    "puppeteer-extra-plugin-user-preferences": "^2.4.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swiper": "^11.2.10",
@@ -34,7 +41,9 @@
     "typescript": "^5.9.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.12",
     "puppeteer": "^24.16.2"
+  },
+  "pkg": {
+    "assets": "node_modules/puppeteer-extra-plugin-stealth/**/*.*"
   }
 }

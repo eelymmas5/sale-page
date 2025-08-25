@@ -1,31 +1,42 @@
+import { Suspense } from "react";
 import PopularGames from "@/components/sections/PopularGames";
-import ProviderCarouselSSR from "@/components/ProviderCarouselSSR";
-import { Game, scrapeGames } from "@/lib/scrapeGames";
+import ProviderCarousel from "@/components/ProviderCarousel";
 import { getBanners } from "@/lib/wordpress";
 
 const DEFAULT_PROVIDER = "pg-soft";
 
-async function getGames(provider?: string): Promise<Game[]> {
-  console.log(
-    `🎮 Starting server-side game scraping for provider: ${
-      provider || DEFAULT_PROVIDER
-    }...`
+function PopularGamesSkeleton({ provider }: { provider: string }) {
+  return (
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+          {provider}
+        </h1>
+      </div>
+
+      {/* Games Grid Skeleton */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="group relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden animate-pulse"
+          >
+            {/* Game Image Skeleton */}
+            <div className="relative aspect-video overflow-hidden bg-gray-700"></div>
+
+            {/* Game Info Skeleton */}
+            <div className="p-2 sm:p-3 lg:p-4">
+              <div className="flex items-start justify-between mb-1 sm:mb-2">
+                <div className="w-3/4 h-4 bg-gray-700 rounded"></div>
+                <div className="w-12 h-3 bg-gray-700 rounded"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
-
-  try {
-    const games = await scrapeGames(provider || DEFAULT_PROVIDER);
-
-    if (games && games.length > 0) {
-      console.log(`✅ Successfully scraped ${games.length} games`);
-      return games;
-    } else {
-      throw new Error("No games found during scraping");
-    }
-  } catch (error) {
-    console.error("❌ Error during server-side scraping:", error);
-
-    return [];
-  }
 }
 
 interface HomePageProps {
@@ -36,9 +47,6 @@ export default async function HomePage(params: HomePageProps) {
   const { provider } = await params.searchParams;
   // Get provider from URL search params, default to PG Soft
   const selectedProvider = provider || DEFAULT_PROVIDER;
-
-  // Server-side fetch games for selected provider
-  const games = await getGames(selectedProvider);
 
   // Fetch banners from WordPress
   const banners = await getBanners();
@@ -81,11 +89,13 @@ export default async function HomePage(params: HomePageProps) {
 
       {/* Provider Carousel Section */}
       <div className="px-4">
-        <ProviderCarouselSSR selectedProvider={selectedProvider} />
+        <ProviderCarousel selectedProvider={selectedProvider} />
       </div>
 
       <main className="flex-1 flex gap-4 p-4 sm:p-6 sm:ml-20 lg:ml-24">
-        <PopularGames games={games} provider={selectedProvider} />
+        <Suspense fallback={<PopularGamesSkeleton provider={selectedProvider} />}>
+          <PopularGames provider={selectedProvider} />
+        </Suspense>
       </main>
     </div>
   );

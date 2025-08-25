@@ -1,22 +1,36 @@
 import Image from "next/image";
+import { Game, scrapeGames } from "@/lib/scrapeGames";
 
-interface Game {
-  id: string;
-  name: string;
-  image: string;
-  players: number;
-  rtp: string;
-  isHot?: boolean;
-  isNew?: boolean;
-  category: string;
+async function getGames(provider?: string): Promise<Game[]> {
+  const DEFAULT_PROVIDER = "pg-soft";
+  console.log(
+    `🎮 Starting server-side game scraping for provider: ${
+      provider || DEFAULT_PROVIDER
+    }...`
+  );
+
+  try {
+    const games = await scrapeGames(provider || DEFAULT_PROVIDER);
+
+    if (games && games.length > 0) {
+      console.log(`✅ Successfully scraped ${games.length} games`);
+      return games;
+    } else {
+      throw new Error("No games found during scraping");
+    }
+  } catch (error) {
+    console.error("❌ Error during server-side scraping:", error);
+
+    return [];
+  }
 }
 
 interface PopularGamesProps {
-  games: Game[];
   provider: string;
 }
 
-export default function PopularGames({ provider, games }: PopularGamesProps) {
+export default async function PopularGames({ provider }: PopularGamesProps) {
+  const games = await getGames(provider);
   const formatPlayers = (count: number): string => {
     if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}k`;

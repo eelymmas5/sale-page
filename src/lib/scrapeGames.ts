@@ -1,8 +1,30 @@
 import puppeteer from "puppeteer-extra";
+
+require("puppeteer-extra-plugin-stealth/evasions/chrome.app");
+require("puppeteer-extra-plugin-stealth/evasions/chrome.csi");
+require("puppeteer-extra-plugin-stealth/evasions/chrome.loadTimes");
+require("puppeteer-extra-plugin-stealth/evasions/chrome.runtime");
+require("puppeteer-extra-plugin-stealth/evasions/defaultArgs");
+require("puppeteer-extra-plugin-stealth/evasions/iframe.contentWindow");
+require("puppeteer-extra-plugin-stealth/evasions/media.codecs");
+require("puppeteer-extra-plugin-stealth/evasions/navigator.hardwareConcurrency");
+require("puppeteer-extra-plugin-stealth/evasions/navigator.languages");
+require("puppeteer-extra-plugin-stealth/evasions/navigator.permissions");
+require("puppeteer-extra-plugin-stealth/evasions/navigator.plugins");
+require("puppeteer-extra-plugin-stealth/evasions/navigator.vendor");
+require("puppeteer-extra-plugin-stealth/evasions/navigator.webdriver");
+require("puppeteer-extra-plugin-stealth/evasions/sourceurl");
+require("puppeteer-extra-plugin-stealth/evasions/user-agent-override");
+require("puppeteer-extra-plugin-stealth/evasions/webgl.vendor");
+require("puppeteer-extra-plugin-stealth/evasions/window.outerdimensions");
+
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 // Add stealth plugin
-puppeteer.use(StealthPlugin());
+puppeteer
+  .use(StealthPlugin())
+  .use(require("puppeteer-extra-plugin-user-preferences"))
+  .use(require("puppeteer-extra-plugin-user-data-dir"));
 
 export interface Game {
   id: string;
@@ -24,7 +46,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
   console.log("🎮 Starting server-side game scraping...");
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔧 Platform: ${process.platform}`);
-  console.log(`🎯 Target Provider: ${targetProvider || 'pg-soft'}`);
+  console.log(`🎯 Target Provider: ${targetProvider || "pg-soft"}`);
   console.log(`📅 Timestamp: ${new Date().toISOString()}`);
 
   let browser;
@@ -266,12 +288,18 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
 
       try {
         // Click on provider image
-        console.log(`🖱️ Clicking on ${provider.name} provider at ${new Date().toISOString()}`);
+        console.log(
+          `🖱️ Clicking on ${
+            provider.name
+          } provider at ${new Date().toISOString()}`
+        );
         await page.click(provider.selector);
         await wait(3000); // Wait for games to load
 
         // Wait for game items to load
-        console.log(`⏳ Waiting for .game-item elements to load for ${provider.name}...`);
+        console.log(
+          `⏳ Waiting for .game-item elements to load for ${provider.name}...`
+        );
         try {
           await page.waitForSelector(".game-item", {
             timeout: 15000,
@@ -285,7 +313,11 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
         }
 
         // Extract game data for this provider
-        console.log(`🔍 Extracting game data for ${provider.name} at ${new Date().toISOString()}...`);
+        console.log(
+          `🔍 Extracting game data for ${
+            provider.name
+          } at ${new Date().toISOString()}...`
+        );
         const providerGames = await extractGamesFromPage(page, provider.name);
 
         console.log(
@@ -294,13 +326,17 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
         allGames.push(...providerGames);
       } catch (error) {
         console.error(`❌ Error scraping ${provider.name}:`, error);
-        console.error(`❌ Provider error timestamp: ${new Date().toISOString()}`);
+        console.error(
+          `❌ Provider error timestamp: ${new Date().toISOString()}`
+        );
         continue;
       }
     }
 
     console.log(`🎮 Total games scraped: ${allGames.length}`);
-    console.log(`✅ Scraping completed successfully at ${new Date().toISOString()}`);
+    console.log(
+      `✅ Scraping completed successfully at ${new Date().toISOString()}`
+    );
     return allGames;
   } catch (error) {
     console.error("❌ Server-side scraping failed:", error);
@@ -507,7 +543,9 @@ async function extractGamesFromPage(
       .slice(0, 10); // Limit to 10 games
 
     console.log(
-      `🎯 Sorted and limited to top ${sortedGames.length} games by RTP for ${providerName} at ${new Date().toISOString()}`
+      `🎯 Sorted and limited to top ${
+        sortedGames.length
+      } games by RTP for ${providerName} at ${new Date().toISOString()}`
     );
     return sortedGames;
   } catch (error) {
