@@ -13,6 +13,30 @@ export interface Provider {
 
 export const PROVIDERS: Provider[] = [
   {
+    id: "popular",
+    name: "Popular",
+    displayName: "Popular",
+    image:
+      "https://cdn.eaeaea.click/img/sportsbook/provider/POPG/POPG_1711714257.webp",
+    selector: 'img[alt="Popular Game"]',
+  },
+  {
+    id: "recommended",
+    name: "Recommended",
+    displayName: "Recommended",
+    image:
+      "https://cdn.eaeaea.click/img/sportsbook/provider/RECG/RECG_1711714312.webp",
+    selector: 'img[alt="Recommended"]',
+  },
+  {
+    id: "new-game",
+    name: "New Game",
+    displayName: "New Game",
+    image:
+      "https://cdn.eaeaea.click/img/sportsbook/provider/NEWG/NEWG_1711714213.webp",
+    selector: 'img[alt="New Game"]',
+  },
+  {
     id: "pg-soft",
     name: "PG Soft",
     displayName: "PG Soft",

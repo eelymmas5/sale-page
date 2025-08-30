@@ -1,5 +1,15 @@
 import Image from "next/image";
 
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  "popular": "Popular",
+  "recommended": "Recommended", 
+  "new-game": "New Game",
+  "pg-soft": "PG Soft",
+  "pragmatic-play": "Pragmatic Play",
+  "jili": "Jili",
+  "microgaming": "Microgaming",
+};
+
 export interface Game {
   id: string;
   name: string;
@@ -15,34 +25,44 @@ export interface Game {
 async function getGames(provider?: string): Promise<Game[]> {
   const DEFAULT_PROVIDER = "pg-soft";
   const selectedProvider = provider || DEFAULT_PROVIDER;
-  
+
   console.log(
     `🎮 Fetching games from API for provider: ${selectedProvider}...`
   );
 
   try {
     // Determine the base URL for API calls
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    
+    const baseUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
     // Call our API route instead of direct scraping
-    const response = await fetch(`${baseUrl}/api/scrape-games?provider=${selectedProvider}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store', // Ensure we don't cache the API response at the fetch level since we handle caching in the API
-    });
+    const response = await fetch(
+      `${baseUrl}/api/scrape-games?provider=${selectedProvider}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store", // Ensure we don't cache the API response at the fetch level since we handle caching in the API
+      }
+    );
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
-    
+
     if (data.success && data.games && data.games.length > 0) {
-      console.log(`✅ Successfully fetched ${data.games.length} games from API${data.fromCache ? ' (cached)' : ''}`);
+      console.log(
+        `✅ Successfully fetched ${data.games.length} games from API${
+          data.fromCache ? " (cached)" : ""
+        }`
+      );
       return data.games;
     } else if (data.games && data.games.length > 0) {
       // Fallback data is still useful
@@ -70,12 +90,14 @@ export default async function PopularGames({ provider }: PopularGamesProps) {
     return count.toString();
   };
 
+  const displayName = PROVIDER_DISPLAY_NAMES[provider] || provider;
+
   return (
     <div className="w-full">
       {/* Header with Popular Game Icons */}
       <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
-          {provider}
+          {displayName}
         </h1>
       </div>
 

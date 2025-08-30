@@ -45,7 +45,7 @@ const wait = (ms: number) =>
 
 export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
   const provider = targetProvider || "pg-soft";
-  
+
   // Always log in production for monitoring
   console.log("🎮 Starting server-side game scraping...");
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
@@ -250,6 +250,17 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
 
     // Define all available providers
     const allProviders = [
+      { id: "popular", name: "Popular", selector: 'img[alt="Popular Game"]' },
+      {
+        id: "recommended",
+        name: "Recommended",
+        selector: 'img[alt="Recommended"]',
+      },
+      {
+        id: "new-game",
+        name: "New Game",
+        selector: 'img[alt="New Game"]',
+      },
       { id: "pg-soft", name: "PG Soft", selector: 'img[alt="PG Soft"]' },
       {
         id: "pragmatic-play",
