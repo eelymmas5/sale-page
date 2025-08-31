@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ApolloWrapper } from "@/lib/apollo-wrapper";
+import QueryProvider from "@/lib/query-client";
 import "@/styles/globals.css";
 
 const inter = Inter({
@@ -50,7 +51,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body className={`${inter.className} antialiased bg-gaming-gradient`}>
-        <ApolloWrapper>{children}</ApolloWrapper>
+        <QueryProvider>
+          <ApolloWrapper>{children}</ApolloWrapper>
+        </QueryProvider>
       </body>
     </html>
   );

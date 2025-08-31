@@ -1,8 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import { ReactElement } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  poppular: "Poppular",
   popular: "Popular",
   recommended: "Recommended",
   "new-game": "New Game",
@@ -25,7 +27,7 @@ export interface Game {
 }
 
 async function getGames(provider?: string): Promise<Game[]> {
-  const DEFAULT_PROVIDER = "poppular";
+  const DEFAULT_PROVIDER = "popular";
   const selectedProvider = provider || DEFAULT_PROVIDER;
 
   console.log(
@@ -80,11 +82,23 @@ async function getGames(provider?: string): Promise<Game[]> {
 }
 
 interface PopularGamesProps {
-  provider: string;
+  provider?: string;
 }
 
-export default async function PopularGames({ provider }: PopularGamesProps): Promise<ReactElement> {
-  const games = await getGames(provider);
+export default function PopularGames({
+  provider = "popular",
+}: PopularGamesProps): ReactElement {
+  const {
+    data: games = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["games", provider],
+    queryFn: () => getGames(provider),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
   const formatPlayers = (count: number): string => {
     if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}k`;
@@ -93,6 +107,51 @@ export default async function PopularGames({ provider }: PopularGamesProps): Pro
   };
 
   const displayName = PROVIDER_DISPLAY_NAMES[provider] || provider;
+
+  if (error) {
+    return (
+      <div className="w-full">
+        <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+            {displayName}
+          </h1>
+        </div>
+        <div className="flex items-center justify-center h-64 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg sm:rounded-xl lg:rounded-2xl">
+          <div className="text-center">
+            <div className="text-4xl mb-4">⚠️</div>
+            <p className="text-white text-lg mb-2">Failed to load games</p>
+            <p className="text-gray-400 text-sm">Please try again later</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+            {displayName}
+          </h1>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden shadow-xl animate-pulse"
+            >
+              <div className="aspect-video bg-gray-700" />
+              <div className="p-2 sm:p-3 lg:p-4">
+                <div className="h-4 bg-gray-700 rounded mb-2" />
+                <div className="h-3 bg-gray-700 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

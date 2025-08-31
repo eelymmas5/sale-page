@@ -93,11 +93,7 @@ export default async function HomePage(params: HomePageProps) {
       </div>
 
       <main className="flex-1 flex gap-4 p-4 sm:p-6">
-        <Suspense
-          fallback={<PopularGamesSkeleton provider={selectedProvider} />}
-        >
-          <PopularGames provider={selectedProvider} />
-        </Suspense>
+        <PopularGames provider={selectedProvider} />
       </main>
     </div>
   );
