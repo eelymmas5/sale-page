@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scrapeGames, Game } from '@/lib/scrapeGames';
+import { cacheManager } from '@/lib/redis';
 
 interface ScrapedGameResponse {
   success: boolean;
@@ -12,53 +13,24 @@ interface ScrapedGameResponse {
   fromCache?: boolean;
 }
 
-interface CacheEntry {
-  data: ScrapedGameResponse;
-  timestamp: number;
-  provider: string;
-}
-
-// In-memory cache with 15-minute TTL
-const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
-
-function getCacheKey(provider: string): string {
-  return `games_${provider || 'pg-soft'}`;
-}
-
-function isValidCache(entry: CacheEntry): boolean {
-  const now = Date.now();
-  return (now - entry.timestamp) < CACHE_TTL;
-}
-
-function clearExpiredCache(): void {
-  const now = Date.now();
-  for (const [key, entry] of cache.entries()) {
-    if ((now - entry.timestamp) >= CACHE_TTL) {
-      cache.delete(key);
-    }
-  }
-}
+// Cache TTL in seconds
+const CACHE_TTL = 15 * 60; // 15 minutes
 
 export async function GET(request: NextRequest) {
   console.log('🎮 Starting game scraping API...');
   
-  // Clear expired cache entries
-  clearExpiredCache();
-  
   // Get provider from query parameters
   const { searchParams } = new URL(request.url);
   const provider = searchParams.get('provider') || 'pg-soft';
-  const cacheKey = getCacheKey(provider);
+  const cacheKey = cacheManager.getCacheKey(provider);
   
   console.log(`🎯 API requested provider: ${provider}`);
   
   // Check cache first
-  const cachedEntry = cache.get(cacheKey);
-  if (cachedEntry && isValidCache(cachedEntry)) {
-    console.log(`💾 Returning cached data for ${provider} (${Math.round((Date.now() - cachedEntry.timestamp) / 1000)}s old)`);
+  const cachedData = await cacheManager.get<ScrapedGameResponse>(cacheKey);
+  if (cachedData) {
     const cachedResponse = {
-      ...cachedEntry.data,
+      ...cachedData,
       fromCache: true,
       timestamp: new Date().toISOString()
     };
@@ -74,7 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cachedResponse, { headers: cacheHeaders });
   }
   
-  console.log(`🔄 Cache miss or expired for ${provider}, fetching fresh data...`);
+  console.log(`🔄 Cache miss for ${provider}, fetching fresh data...`);
   
   try {
     // Add timeout to prevent hanging
@@ -114,11 +86,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Cache the response
-    cache.set(cacheKey, {
-      data: response,
-      timestamp: Date.now(),
-      provider
-    });
+    await cacheManager.set(cacheKey, response, CACHE_TTL);
     
     console.log(`💾 Cached fresh data for ${provider}`);
     
@@ -147,12 +115,8 @@ export async function GET(request: NextRequest) {
       fromCache: false
     };
     
-    // Cache fallback data as well to prevent repeated failures
-    cache.set(cacheKey, {
-      data: errorResponse,
-      timestamp: Date.now(),
-      provider
-    });
+    // Cache fallback data as well to prevent repeated failures (shorter TTL for errors)
+    await cacheManager.set(cacheKey, errorResponse, 5 * 60); // 5 minutes for errors
     
     console.log(`💾 Cached fallback data for ${provider} due to error`);
     

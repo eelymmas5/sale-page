@@ -1,13 +1,15 @@
 import Image from "next/image";
+import { ReactElement } from "react";
 
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  "popular": "Popular",
-  "recommended": "Recommended", 
+  poppular: "Poppular",
+  popular: "Popular",
+  recommended: "Recommended",
   "new-game": "New Game",
   "pg-soft": "PG Soft",
   "pragmatic-play": "Pragmatic Play",
-  "jili": "Jili",
-  "microgaming": "Microgaming",
+  jili: "Jili",
+  microgaming: "Microgaming",
 };
 
 export interface Game {
@@ -23,7 +25,7 @@ export interface Game {
 }
 
 async function getGames(provider?: string): Promise<Game[]> {
-  const DEFAULT_PROVIDER = "pg-soft";
+  const DEFAULT_PROVIDER = "poppular";
   const selectedProvider = provider || DEFAULT_PROVIDER;
 
   console.log(
@@ -81,7 +83,7 @@ interface PopularGamesProps {
   provider: string;
 }
 
-export default async function PopularGames({ provider }: PopularGamesProps) {
+export default async function PopularGames({ provider }: PopularGamesProps): Promise<ReactElement> {
   const games = await getGames(provider);
   const formatPlayers = (count: number): string => {
     if (count >= 1000) {

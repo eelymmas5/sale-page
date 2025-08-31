@@ -3,7 +3,7 @@ import PopularGames from "@/components/sections/PopularGames";
 import ProviderCarousel from "@/components/ProviderCarousel";
 import { getBanners } from "@/lib/wordpress";
 
-const DEFAULT_PROVIDER = "pg-soft";
+const DEFAULT_PROVIDER = "poppular";
 
 function PopularGamesSkeleton({ provider }: { provider: string }) {
   return (
@@ -88,12 +88,14 @@ export default async function HomePage(params: HomePageProps) {
       </div>
 
       {/* Provider Carousel Section */}
-      <div className="px-4">
+      <div className="px-4 lg:mt-8">
         <ProviderCarousel selectedProvider={selectedProvider} />
       </div>
 
-      <main className="flex-1 flex gap-4 p-4 sm:p-6 sm:ml-20 lg:ml-24">
-        <Suspense fallback={<PopularGamesSkeleton provider={selectedProvider} />}>
+      <main className="flex-1 flex gap-4 p-4 sm:p-6">
+        <Suspense
+          fallback={<PopularGamesSkeleton provider={selectedProvider} />}
+        >
           <PopularGames provider={selectedProvider} />
         </Suspense>
       </main>

@@ -250,6 +250,7 @@ export async function scrapeGames(targetProvider?: string): Promise<Game[]> {
 
     // Define all available providers
     const allProviders = [
+      { id: "poppular", name: "Poppular", selector: 'img[alt="Poppular Game"]' },
       { id: "popular", name: "Popular", selector: 'img[alt="Popular Game"]' },
       {
         id: "recommended",
