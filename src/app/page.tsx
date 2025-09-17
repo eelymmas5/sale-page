@@ -3,7 +3,7 @@ import PopularGames from "@/components/sections/PopularGames";
 import ProviderCarousel from "@/components/ProviderCarousel";
 import { getBanners } from "@/lib/wordpress";
 
-const DEFAULT_PROVIDER = "poppular";
+const DEFAULT_PROVIDER = "popular";
 
 function PopularGamesSkeleton({ provider }: { provider: string }) {
   return (
